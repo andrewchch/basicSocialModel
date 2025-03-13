@@ -9,7 +9,8 @@ class Relationship(interfaces.IRelationship):
         self.person2 = person2
         self.params = params
         self.relationship_collection = relationship_collection
-        self.strength = params['default_relationship_strength']
+        self.debt = params['default_relationship_strength']
+        self.history = []
 
     def __str__(self):
         return f'Relationship between {self.person1.name} and {self.person2.name}'
@@ -17,26 +18,26 @@ class Relationship(interfaces.IRelationship):
     def __repr__(self):
         return f'Relationship({self.person1.name}, {self.person2.name})'
 
-    def weaken(self):
-        self.strength -= self.params['relationship_increment']
-        if self.strength < 0:
-            self.strength = 0
+    def debt_down(self):
+        self.debt -= self.params['relationship_increment']
+        if self.debt < 0:
+            self.debt = 0
+        self.history.append({'debt': self.debt})
 
-    def strengthen(self):
-        self.strength += self.params['relationship_increment']
-        if self.strength > 1:
-            self.strength = 1
+    def debt_up(self):
+        self.debt += self.params['relationship_increment']
+        if self.debt > 1:
+            self.debt = 1
+        self.history.append({'debt': self.debt})
 
-    def update(self):
-        # Increment the strength of the relationship from person1 to person2
-        self.strengthen()
+    def increase_debt(self):
+        # Increase the debt of the first person to the second and reduce the debt in the other direction
+        self.debt_up()
 
-        # Find the inverse relationship and decrement its strength
+        # Find the inverse relationship and reduce the debt of the other
         inverse_relationship = self.relationship_collection.get(self.person2, self.person1)
         if inverse_relationship:
-            inverse_relationship.weaken()
-        else:
-            pass
+            inverse_relationship.debt_down()
 
 
 class RelationshipCollection(interfaces.IRelationshipCollection):
@@ -65,14 +66,20 @@ class RelationshipCollection(interfaces.IRelationshipCollection):
         return self.relationships.get((person1.name, person2.name), None)
 
     def build_relationships(self, person: Person):
-        """Builds relationships for one person with a set of others"""
+        """Builds relationships for one person with a set of others. A person only starts building relationships when they
+        are a certain minimum age, and only build relationships with people in a certain age range"""
         assert self._people is not None, 'People must be set before building relationships'
+        assert person.age >= self.params['min_rel_build_age'], 'Person must be at least the minimum relationship age'
 
         if len(person.relationships) >= self.params['max_relationships']:
             return
 
         _others = list(self._people)
         random.shuffle(_others)
+
+        # Filter out people who are too young or too old
+        threshold = self.params['rel_build_threshold_years']
+        _others = [other for other in _others if person.age - threshold <= other.age <= person.age + threshold]
 
         found = False
 

@@ -11,9 +11,9 @@ def main():
     stats = []
 
     params = {
-        'start_population': 200,
-        'start_resources': 1000,
-        'turns': 1000,
+        'start_population': 500,
+        'start_resources': 500,
+        'turns': 2000,
         'age_std_dev': 15,
         'age_mean': 40,
         'max_age': 80,
@@ -22,19 +22,20 @@ def main():
         'child_chance': 0.07,
         'max_children_min': 1,
         'max_children_max': 3,
-        'need_per_turn': 1,
+        'need_per_turn': 2,
         'stockpiling_need_per_turn_min': 0,
-        'stockpiling_need_per_turn_max': 5,
-        'stockpile': 0,
+        'stockpiling_need_per_turn_max': 3,
         'min_reproduce_age': 18,
         'max_reproduce_age': 40,
-        'resource_max_amount': 10,
+        'resource_max_amount': 2,
         'find_resources_count': 5,
         'grow_amount': 1,
-        'max_relationships': 2,
+        'max_relationships': 5,
         'default_relationship_strength': 0.5,
         'relationship_increment': 0.1,
-        'relationship_threshold': 0.5
+        'max_debt': 0.7,
+        'min_rel_build_age': 16,
+        'rel_build_threshold_years': 5
     }
 
     # Create resource collection with random amounts
@@ -48,11 +49,6 @@ def main():
 
     # Provide the relationship collection with the people
     relationship_collection.people = people
-
-    # Build relationships between people
-    # todo: this is a bit of a hack, we should probably improve the knowledge people and the relationship collection have of each other
-    for person in people:
-        person.build_relationships()
 
     try:
         for turn in tqdm(range(0, params['turns']), desc='Simulating', unit='turns'):
@@ -143,9 +139,29 @@ def main():
         plt.show()
 
     # Plot a histogram of relationship strengths
-    strengths = [relationship.strength for person in people if person.alive for relationship in person.relationships]
+    strengths = [relationship.debt for person in people if person.alive for relationship in person.relationships]
     plt.hist(strengths, bins=10)
     plt.title('Relationship strengths')
+    plt.show()
+
+    # Plot a histogram of the number of relationships of living people
+    relationships = [len(person.relationships) for person in people if person.alive]
+    plt.hist(relationships, bins=range(0, 10))
+    plt.title('Number of relationships')
+    plt.show()
+
+    # Get the mean strength of a relationship and its inverse relationship
+    strengths = []
+    for person in [p for p in people if p.alive]:
+        for relationship in person.relationships:
+            strengths.append(relationship.debt)
+            inverse_relationship = relationship.relationship_collection.get(relationship.person2, relationship.person1)
+            if inverse_relationship:
+                strengths.append(0.5 * (relationship.debt + inverse_relationship.debt))
+
+    # Plot a histogram of the mean strength of a relationship and its inverse relationship
+    plt.hist(strengths, bins=10)
+    plt.title('Mean relationship strengths')
     plt.show()
 
     # Plot a correlation between the number of children and the stockpile size
@@ -168,6 +184,10 @@ def main():
 
     print(children_counts)
 
+    # Get the number of relationships with history entries
+    relationships = [relationship for person in people if person.alive for relationship in person.relationships]
+    relationships_with_history = [relationship for relationship in relationships if len(relationship.history) > 0]
+    print(f'Number of relationships with history: {len(relationships_with_history)}')
 
 if __name__ == '__main__':
     main()

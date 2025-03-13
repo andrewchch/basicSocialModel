@@ -3,10 +3,9 @@ import interfaces
 
 
 class Resource(interfaces.IResource):
-    def __init__(self, amount, params):
+    def __init__(self, params):
         self.params = params
-        self.amount = amount
-        self.max_amount = self.params['resource_max_amount']
+        self.amount = self.params['resource_max_amount']
 
     def __str__(self):
         return f'{self.amount}'
@@ -23,14 +22,14 @@ class Resource(interfaces.IResource):
     def produce(self, amount):
         """An amount of this resource is produced"""
         self.amount += amount
-        if self.amount > self.max_amount:
-            self.amount = self.max_amount
+        if self.amount > self.params['resource_max_amount']:
+            self.amount = self.params['resource_max_amount']
 
 
 class ResourceCollection(interfaces.IResourceCollection):
     def __init__(self, params, count=100):
         self.params = params
-        self.resources = [Resource(i, params) for i in range(0, count)]
+        self.resources = [Resource(params) for i in range(0, count)]
 
     def find_resources(self, count=5):
         """ return a random set of N resource"""

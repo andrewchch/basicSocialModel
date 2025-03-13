@@ -20,9 +20,6 @@ class Person(interfaces.IPerson):
         self.relationships = []
         self.relationship_collection = relationship_collection
 
-        if self.relationship_collection and self.relationship_collection.people:
-            self.build_relationships()
-
     def __str__(self):
         return f'Person {self.name} is {self.age} years old'
 
@@ -30,7 +27,7 @@ class Person(interfaces.IPerson):
         return f'Person({self.name}, {self.age})'
 
     def build_relationships(self):
-        # Build a set of relationships
+        # Build a set of relationships if we don't have the maximum number of relationships
         self.relationship_collection.build_relationships(self)
 
     def have_child(self):
@@ -84,8 +81,8 @@ class Person(interfaces.IPerson):
         # If we don't have enough in our stockpile, ask one of our related people for help
         if needs > 0:
             for relationship in self.relationships:
-                # If this relationship is too weak, skip it
-                if relationship.strength < self.params['relationship_threshold']:
+                # If we are more than a certain amount in debt, we can't ask for help
+                if relationship.debt > self.params['max_debt']:
                     continue
 
                 if needs <= 0:
@@ -96,8 +93,8 @@ class Person(interfaces.IPerson):
                     other.stockpile -= needs_from_other
                     needs -= needs_from_other
 
-                    # Update the strength of both of our relationships
-                    relationship.update()
+                    # Since I got something from them, my "credit" is lowered and theirs is raised
+                    relationship.increase_debt()
 
         # If we still can't meet our needs, we die
         if needs > 0:
@@ -124,6 +121,10 @@ class Person(interfaces.IPerson):
         self.meet_needs()
 
         child = self.have_child()
+
+        if self.age > self.params['min_rel_build_age']:
+            if self.relationship_collection and self.relationship_collection.people:
+                self.build_relationships()
 
         self.ages()
 
