@@ -44,6 +44,10 @@ class IPerson:
         pass
 
 
+class IPersonCollection:
+    def add(self, person: IPerson):
+        pass
+
 
 class IRelationship:
     def __init__(self, params, person1: IPerson, person2: IPerson):

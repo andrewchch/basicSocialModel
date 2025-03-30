@@ -31,13 +31,15 @@ class ResourceCollection(interfaces.IResourceCollection):
         self.params = params
         self.resources = [Resource(params) for i in range(0, count)]
 
-    def find_resources(self, count=5):
+    def find_resources(self, count=0):
         """ return a random set of N resource"""
-        return random.sample(self.resources, self.params['find_resources_count'])
+        _count = count > 0 and count or self.params['find_resources_count']
+        return random.sample(self.resources, _count)
 
     def grow(self):
         for resource in self.resources:
-            resource.produce(self.params['grow_amount'])
+            if random.random() < self.params['grow_chance']:
+                resource.produce(self.params['grow_amount'])
 
     def total_resources(self):
         return sum([resource.amount for resource in self.resources])
