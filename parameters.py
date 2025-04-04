@@ -20,8 +20,6 @@ class Parameters:
             'max_age_min': 60,
             'max_age_max': 80,
             'child_chance': 0.07,
-            'max_children_min': 1,
-            'max_children_max': 3,
             'need_per_turn': 2,
             'stockpiling_need_per_turn_min': 0.5,
             'stockpiling_need_per_turn_max': 2.5,
