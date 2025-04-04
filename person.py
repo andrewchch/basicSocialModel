@@ -31,7 +31,6 @@ class Person(interfaces.IPerson):
         self.progeny = []
         self.need_per_turn = params['need_per_turn']
         self.stockpile = 0
-        self.max_children = random.randint(params['max_children_min'], params['max_children_max'])
         self.resource_collection = resource_collection
         self.child_chance = params['child_chance']
         self.relationships = []
@@ -65,9 +64,6 @@ class Person(interfaces.IPerson):
             return None
 
         if random.random() > self.child_chance:
-            return
-
-        if len(self.progeny) >= self.max_children:
             return
 
         if self.stockpile < self.params['min_stockpile_for_breeding']:
