@@ -11,10 +11,11 @@ from parameters import Parameters
 from person import PersonCollection, ResourcesMetEnum, HowDiedEnum
 from resource import ResourceCollection
 from relationship import RelationshipCollection
+from performance import analyse
 
 
-def get_filter_length(l, a):
-    return sum(1 for _ in (filter(l, a)))
+def get_filter_length(lmb, a):
+    return sum(1 for _ in (filter(lmb, a)))
 
 
 def main():
@@ -25,9 +26,10 @@ def main():
         'children_born_per_year': True,
         'average_number_of_children': False,
         'average_age': False,
+        'average_age_of_death': True,
         'resources': True,
         'total_children_with_alive_parents': False,
-        'average_stockpile': False,
+        'average_stockpile': True,
         'total_stockpile_need_per_turn': False,
         'total_stockpile': False,
         'num_children_by_stockpile': False,
@@ -42,6 +44,9 @@ def main():
         'people_to_resources_ratios': True,
         }
 
+    # Turn all charts off
+    # charts = {k: False for k in charts.keys()}
+
     # Create some parameters
     params = Parameters()
 
@@ -54,12 +59,15 @@ def main():
     # Create a collection of people of random ages
     pc = PersonCollection(params, params['start_population'], resource_collection, relationship_collection)
     people = pc.people
+    relationship_collection.person_collection = pc
 
     # Chart the distribution of ages
+    """
     ages = [person.age for person in people]
     plt.hist(ages, bins=range(0, 100, 5))
     plt.title('Ages')
     plt.show()
+    """
 
     # Provide the relationship collection with the people
     relationship_collection.people = pc.people
@@ -99,10 +107,10 @@ def main():
             num_people_acted_in_turn = num_alive_people + len(died_this_turn)
 
             # Stats for percentages of people having their needs met from different sources
-
             needs_met_from_resources = get_filter_length(lambda p: p.needs_met == ResourcesMetEnum.FROM_RESOURCES, alive_people)/num_people_acted_in_turn
             needs_met_from_stockpile = get_filter_length(lambda p: p.needs_met == ResourcesMetEnum.FROM_STOCKPILE, alive_people)/num_people_acted_in_turn
             needs_met_from_relationships = get_filter_length(lambda p: p.needs_met == ResourcesMetEnum.FROM_RELATIONSHIPS, alive_people)/num_people_acted_in_turn
+            needs_from_parent = get_filter_length(lambda p: p.needs_met == ResourcesMetEnum.FROM_PARENT, alive_people)/num_people_acted_in_turn
             needs_not_met_died = get_filter_length(lambda p: p.needs_met == ResourcesMetEnum.NOT_MET_DIED, died_this_turn)/num_people_acted_in_turn
 
             # Get counts of how people died in this turn
@@ -120,6 +128,7 @@ def main():
                 'people': len(pc.people),
                 'alive': num_alive_people,
                 'dead': len(pc.people) - num_alive_people,
+                'average_age_of_death': sum([person.age for person in died_this_turn]) / len(died_this_turn) if len(died_this_turn) > 0 else 0,
                 'resources': resource_collection.total_resources(),
                 'average_number_of_children': sum([len(person.progeny) for person in alive_people]) / num_alive_people,
                 'average_age': sum([person.age for person in alive_people]) / num_alive_people,
@@ -132,6 +141,7 @@ def main():
                 'needs_met_from_resources': needs_met_from_resources,
                 'needs_met_from_stockpile': needs_met_from_stockpile,
                 'needs_met_from_relationships': needs_met_from_relationships,
+                'needs_from_parent': needs_from_parent,
                 'needs_not_met_died': needs_not_met_died,
                 'resources_available': [person.resources_available for person in people if person.alive or (person.needs_met == ResourcesMetEnum.NOT_MET_DIED and person.died == turn)],
                 'num_starved': num_starved,
@@ -158,6 +168,10 @@ def main():
 
     if charts['how_died']:
         df.plot(x='turn', y=['num_starved', 'num_old_age'])
+        plt.show()
+
+    if charts['average_age_of_death']:
+        df.plot(x='turn', y=['average_age_of_death'])
         plt.show()
 
     if charts['children_born_per_year']:
@@ -250,12 +264,11 @@ def main():
     # Display a line chart of the values of needs_met_from_resources, needs_met_from_stockpile,
     # and needs_met_from_relationships
     if charts['needs_met_chart']:
-        df = pd.DataFrame(stats)
         df.plot(x='turn', y=['pct_with_stockpile', 'needs_met_from_resources', 'needs_met_from_stockpile',
-                             'needs_met_from_relationships', 'needs_not_met_died'])
+                             'needs_met_from_relationships', 'needs_from_parent', 'needs_not_met_died'])
         plt.show()
 
-    # Create a boxplot of "resources_available" stat for each turn where the x axis is the turn value and the y axis is
+    # Create a boxplot of "resources_available" stat for each turn where the x-axis is the turn value and the y axis is
     # the resources available
     if charts['resources_available']:
         # Flatten the data
@@ -321,9 +334,20 @@ def main():
 
 
 if __name__ == '__main__':
-    cProfile.run("main()", "sim_stats")
-    p = pstats.Stats("sim_stats")
-    # main()
+    # Capture the stats
+    """
+    stats_file = "sim_stats"
+    cProfile.run("main()", stats_file)
+    p = pstats.Stats(stats_file)
+
+    # Analyse the file
+    df = analyse(stats_file)
+
+    # Pickle the stats
+    df.to_pickle("sim_stats.pkl")
+    df.to_csv("sim_stats.csv")
+    """
+    main()
 
 
 
