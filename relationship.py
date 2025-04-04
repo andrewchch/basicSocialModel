@@ -45,6 +45,7 @@ class RelationshipCollection(interfaces.IRelationshipCollection):
         self.params = params
         self._people = None
         self.relationships = {}
+        self.person_collection = None
 
     @property
     def people(self):
@@ -53,6 +54,14 @@ class RelationshipCollection(interfaces.IRelationshipCollection):
     @people.setter
     def people(self, new_value):
         self._people = new_value
+
+    @property
+    def person_collection(self):
+        return self._person_collection
+
+    @person_collection.setter
+    def person_collection(self, new_value):
+        self._person_collection = new_value
 
     def add(self, person1, person2):
         """Add a relationship between two people, but return None if the relationship already exists"""
@@ -70,11 +79,12 @@ class RelationshipCollection(interfaces.IRelationshipCollection):
         are a certain minimum age, and only build relationships with people in a certain age range"""
         assert self._people is not None, 'People must be set before building relationships'
         assert person.age >= self.params['min_rel_build_age'], 'Person must be at least the minimum relationship age'
+        assert self.person_collection is not None, 'Person collection must be set before building relationships'
 
         if len(person.relationships) >= self.params['max_relationships']:
             return
 
-        _others = list(self._people)
+        _others = list(self.person_collection.alive_people)
         random.shuffle(_others)
 
         # Filter out people who are too young or too old
