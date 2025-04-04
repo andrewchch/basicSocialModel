@@ -206,9 +206,10 @@ def main():
         df.plot(x='turn', y=['total_stockpile'])
         plt.show()
 
-    # Plot a histogram of the number of children of the people who are still alive
+    # Plot a histogram of the number of children of the people who are still alive and of child-bearing age
     if charts['num_children_histogram']:
-        children = [len(person.progeny) for person in people if person.alive]
+        children = [len(person.progeny) for person in people if person.alive and
+                    params['min_reproduce_age'] <= person.age <= params['max_reproduce_age']]
         plt.hist(children, bins=range(0, 10))
         plt.title('Number of children')
         plt.show()
