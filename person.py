@@ -8,7 +8,8 @@ class ResourcesMetEnum:
     FROM_RESOURCES = 1
     FROM_STOCKPILE = 2
     FROM_RELATIONSHIPS = 3
-    NOT_MET_DIED = 4
+    FROM_PARENT = 4
+    NOT_MET_DIED = 5
 
 
 class HowDiedEnum:
@@ -72,8 +73,15 @@ class Person(interfaces.IPerson):
         if self.stockpile < self.params['min_stockpile_for_breeding']:
             return
 
+        # Create a child and return it
+        child = self.add_child()
+        return child
+
+    def add_child(self):
+        """Add a child to this person"""
         child = Person(self.params, 0, self.resource_collection, self.relationship_collection,
                        self.person_collection)
+        child.parent = self
         self.progeny.append(child)
         return child
 
@@ -111,69 +119,82 @@ class Person(interfaces.IPerson):
         """Meet our needs by consuming resources"""
         needs = self.need_per_turn
         stockpile_needs = self.stockpiling_need_per_turn
+        from_stockpile = True
 
-        # If we are less than a certain age, we can only have our needs met from our parent's stockpile
+        # If we are less than a certain age, we can have our needs met from our parent's stockpile or our stockpile
+        # or our stockpile
         if self.age < self.params['min_self_sufficient_age']:
-            if self.parent:
+            from_parent = True
+            from_resources = False
+            from_relationships = False
+        else:
+            from_parent = False
+            from_resources = True
+            from_relationships = True
+
+        # Get resources from the parent
+        if from_parent:
+            if self.parent and self.parent.alive:
                 needs_from_parent = self.parent.contribute(needs)
                 needs -= needs_from_parent
 
-                # If we can't get enough from our parent, we die
-                if needs > 0:
-                    self.needs_met = ResourcesMetEnum.NOT_MET_DIED
-                    self.die(HowDiedEnum.STARVED)
-                    return
+            if needs <= 0:
+                self.needs_met = ResourcesMetEnum.FROM_PARENT
+                return
 
         # Find a set of resources that can meet our needs (and our desire to stockpile)
-        resources = self.resource_collection.find_resources()
-        self.resources_available = sum([resource.amount for resource in resources])
+        if from_resources:
+            resources = self.resource_collection.find_resources()
+            self.resources_available = sum([resource.amount for resource in resources])
 
-        for resource in resources:
-            if needs > 0:
-                consumed = resource.consumed(needs)
-                needs -= min(consumed, needs)
-            elif stockpile_needs > 0:
-                consumed = resource.consumed(stockpile_needs)
-                self.stockpile += consumed
-                stockpile_needs -= consumed
-                if stockpile_needs <= 0:
+            for resource in resources:
+                if needs > 0:
+                    consumed = resource.consumed(needs)
+                    needs -= min(consumed, needs)
+                elif stockpile_needs > 0:
+                    consumed = resource.consumed(stockpile_needs)
+                    self.stockpile += consumed
+                    stockpile_needs -= consumed
+                    if stockpile_needs <= 0:
+                        break
+                else:
                     break
-            else:
-                break
-
-        if needs <= 0:
-            self.needs_met = ResourcesMetEnum.FROM_RESOURCES
-            return
-
-        # If we can't find enough resources to meet our needs, consume our stockpile
-        needs_from_stockpile = min(needs, self.stockpile)
-        self.stockpile -= needs_from_stockpile
-        needs -= needs_from_stockpile
-
-        if needs <= 0:
-            self.needs_met = ResourcesMetEnum.FROM_STOCKPILE
-            return
-
-        # If we don't have enough in our stockpile, ask one of our related people for help
-        for relationship in self.relationships:
-            # If we are more than a certain amount in debt, we can't ask for help
-            if relationship.debt > self.params['max_debt']:
-                continue
 
             if needs <= 0:
-                break
-            other = relationship.person2
-            if other.stockpile > 0:
-                needs_from_other = min(needs, other.stockpile)
-                other.stockpile -= needs_from_other
-                needs -= needs_from_other
+                self.needs_met = ResourcesMetEnum.FROM_RESOURCES
+                return
 
-                # Since I got something from them, my "credit" is lowered and theirs is raised
-                relationship.increase_debt()
+        # If we can't find enough resources to meet our needs, consume our stockpile
+        if from_stockpile:
+            needs_from_stockpile = min(needs, self.stockpile)
+            self.stockpile -= needs_from_stockpile
+            needs -= needs_from_stockpile
 
-        if needs <= 0:
-            self.needs_met = ResourcesMetEnum.FROM_RELATIONSHIPS
-            return
+            if needs <= 0:
+                self.needs_met = ResourcesMetEnum.FROM_STOCKPILE
+                return
+
+        # If we don't have enough in our stockpile, ask one of our related people for help
+        if from_relationships:
+            for relationship in self.relationships:
+                # If we are more than a certain amount in debt, we can't ask for help
+                if relationship.debt > self.params['max_debt']:
+                    continue
+
+                if needs <= 0:
+                    break
+                other = relationship.person2
+                if other.stockpile > 0:
+                    needs_from_other = min(needs, other.stockpile)
+                    other.stockpile -= needs_from_other
+                    needs -= needs_from_other
+
+                    # Since I got something from them, my "credit" is lowered and theirs is raised
+                    relationship.increase_debt()
+
+            if needs <= 0:
+                self.needs_met = ResourcesMetEnum.FROM_RELATIONSHIPS
+                return
 
         # If we still can't meet our needs, we die
         self.needs_met = ResourcesMetEnum.NOT_MET_DIED
