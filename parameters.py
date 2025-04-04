@@ -38,7 +38,7 @@ class Parameters:
             'min_rel_build_age': 16,
             'rel_build_threshold_years': 5,
             'min_self_sufficient_age': 7,
-            'min_stockpile_for_breeding': 3,
+            'min_stockpile_for_breeding': 0,
         }
         self.params = copy(self._params)
         self.epochs = []
