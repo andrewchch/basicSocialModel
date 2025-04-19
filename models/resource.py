@@ -1,11 +1,18 @@
 import random
-import interfaces
+from models import interfaces
 
 
 class Resource(interfaces.IResource):
-    def __init__(self, params):
-        self.params = params
+    _params = None
+
+    def __init__(self, params=None):
+        if Resource._params is None and params is not None:
+            Resource._params = params
         self.amount = self.params['resource_max_amount']
+
+    @property
+    def params(self):
+        return Resource._params
 
     def __str__(self):
         return f'{self.amount}'
@@ -27,9 +34,16 @@ class Resource(interfaces.IResource):
 
 
 class ResourceCollection(interfaces.IResourceCollection):
+    _params = None
+
     def __init__(self, params, count=100):
-        self.params = params
+        if ResourceCollection._params is None and params is not None:
+            ResourceCollection._params = params
         self.resources = [Resource(params) for i in range(0, count)]
+
+    @property
+    def params(self):
+        return ResourceCollection._params
 
     def find_resources(self, count=0):
         """ return a random set of N resource"""

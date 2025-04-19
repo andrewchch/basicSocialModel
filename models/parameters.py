@@ -1,4 +1,4 @@
-from epoch import Epoch
+from models.epoch import Epoch
 from copy import copy
 
 
@@ -13,13 +13,13 @@ class Parameters:
             'turn': 0,
             'start_population': 500,
             'start_resources': 2000,
-            'turns': 4000,
+            'turns': 10000,
             'age_std_dev': 15,
             'age_mean': 40,
             'max_age': 80,
             'max_age_min': 60,
             'max_age_max': 80,
-            'child_chance': 0.07,
+            'child_chance': 0.7,
             'need_per_turn': 2,
             'stockpiling_need_per_turn_min': 0.5,
             'stockpiling_need_per_turn_max': 2.5,
@@ -37,6 +37,7 @@ class Parameters:
             'rel_build_threshold_years': 5,
             'min_self_sufficient_age': 7,
             'min_stockpile_for_breeding': 0,
+            'max_stockpile_transfer': 2,
         }
         self.params = copy(self._params)
         self.epochs = []
@@ -47,6 +48,12 @@ class Parameters:
 
     def __getitem__(self, item):
         return self.params[item]
+
+    def __contains__(self, key):
+        return key in self._params
+
+    def __iter__(self):
+        return iter(self._params)
 
     def add_epoch(self, epoch: Epoch):
         self.epochs.append(epoch)
@@ -69,6 +76,4 @@ class Parameters:
                             self.params[key] = self._params[key]
             self._turn = turn
 
-    def __getitem__(self, item):
-        return self.params[item]
 

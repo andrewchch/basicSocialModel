@@ -4,7 +4,7 @@ class Epoch:
     of the turn number. After the epoch ends, the parameters are reverted to their previous values.
     """
 
-    def __init__(self, start, end, params):
+    def __init__(self, start, end, epoch_params):
         self.start = start
         self.end = end
-        self.params = params
+        self.params = epoch_params

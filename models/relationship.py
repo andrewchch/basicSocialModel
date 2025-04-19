@@ -1,16 +1,24 @@
 import random
-from person import Person
-import interfaces
+from models.person import Person
+from models import interfaces
 
 
 class Relationship(interfaces.IRelationship):
+    _params = None
+
     def __init__(self, params, relationship_collection, person1: interfaces.IPerson, person2: interfaces.IPerson):
+        if Relationship._params is None and params is not None:
+            Relationship._params = params
+
         self.person1 = person1
         self.person2 = person2
-        self.params = params
         self.relationship_collection = relationship_collection
         self.debt = params['default_relationship_strength']
         self.history = []
+
+    @property
+    def params(self):
+        return Relationship._params
 
     def __str__(self):
         return f'Relationship between {self.person1.name} and {self.person2.name}'
@@ -35,29 +43,29 @@ class Relationship(interfaces.IRelationship):
         self.debt_up()
 
         # Find the inverse relationship and reduce the debt of the other
-        inverse_relationship = self.relationship_collection.get(self.person2, self.person1)
+        inverse_relationship = self.relationship_collection.get(self.person2.name, self.person1.name)
         if inverse_relationship:
             inverse_relationship.debt_down()
 
 
 class RelationshipCollection(interfaces.IRelationshipCollection):
+    _params = None
+    person_collection = None
+
     def __init__(self, params):
-        self.params = params
-        self._people = None
+        if RelationshipCollection._params is None and params is not None:
+            RelationshipCollection._params = params
+
         self.relationships = {}
         self.person_collection = None
 
     @property
-    def people(self):
-        return self._people
-
-    @people.setter
-    def people(self, new_value):
-        self._people = new_value
-
-    @property
     def person_collection(self):
         return self._person_collection
+
+    @property
+    def params(self):
+        return RelationshipCollection._params
 
     @person_collection.setter
     def person_collection(self, new_value):
@@ -71,13 +79,12 @@ class RelationshipCollection(interfaces.IRelationshipCollection):
         self.relationships[(person1.name, person2.name)] = relationship
         return relationship
 
-    def get(self, person1: Person, person2: Person):
-        return self.relationships.get((person1.name, person2.name), None)
+    def get(self, person1_name, person2_name):
+        return self.relationships.get((person1_name, person2_name), None)
 
     def build_relationships(self, person: Person):
         """Builds relationships for one person with a set of others. A person only starts building relationships when they
         are a certain minimum age, and only build relationships with people in a certain age range"""
-        assert self._people is not None, 'People must be set before building relationships'
         assert person.age >= self.params['min_rel_build_age'], 'Person must be at least the minimum relationship age'
         assert self.person_collection is not None, 'Person collection must be set before building relationships'
 
