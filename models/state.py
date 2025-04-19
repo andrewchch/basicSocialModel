@@ -2,20 +2,19 @@ import pickle
 
 from models.person import Person, Traits
 from models.relationship import RelationshipCollection
-from models.resource import ResourceCollection
 
 
 class State:
     """
     A class for marshalling and unmarshalling the state of the simulation.
     """
-    def __init__(self, turn, params, person_collection, resource_collection, relationship_collection, stats):
+    def __init__(self, turn, params, person_collection, resource_collection, relationship_collection, stats_collector):
         self.turn = turn
         self.params = params
         self.person_collection = person_collection
         self.resource_collection = resource_collection
         self.relationship_collection = relationship_collection
-        self.stats = stats
+        self.stats_collector = stats_collector
 
     def save(self, filename):
         with open(filename, 'wb') as f:

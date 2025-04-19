@@ -3,9 +3,9 @@ import pandas as pd
 
 
 class Charts:
-    def __init__(self, stats, people, params, person_collection):
+    def __init__(self, stats, params, person_collection):
         self.stats = stats
-        self.people = people
+        self.people = person_collection.people
         self.params = params
         self.pc = person_collection
         
