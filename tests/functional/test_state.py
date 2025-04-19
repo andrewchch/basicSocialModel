@@ -17,7 +17,8 @@ def test_simulation_state_save_and_restore():
     # Initialize collections
     resource_collection = ResourceCollection(params, params['start_resources'])
     relationship_collection = RelationshipCollection(params)
-    person_collection = PersonCollection(params, params['start_population'], resource_collection, relationship_collection)
+    person_collection = PersonCollection(params, resource_collection, relationship_collection)
+    person_collection.initialise(params['start_population'])
     RelationshipCollection.person_collection = person_collection
 
     # Add a stats collector

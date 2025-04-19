@@ -213,6 +213,30 @@ class Person(interfaces.IPerson):
         # Ask our person collection to remove us
         Person.person_collection.decease(self)
 
+    def resources_available_to_give(self, amount, other: interfaces.IPerson):
+        """Return the amount of resources we can give to someone else"""
+        total_needs = self.total_needs()
+        diff = self.stockpile - total_needs
+        if diff >= amount:
+            return min(diff, amount, self.traits['max_stockpile_transfer'])
+        else:
+            return 0
+
+    def provide_resources(self, amount, other: interfaces.IPerson):
+        """Provide an amount of resources to someone else, constrained by what have available to give
+        and the maximum amount we desire to give"""
+        if amount <= 0:
+            return 0
+
+        amount_to_provide = min(self.resources_available_to_give(amount, self), self.stockpile)
+        self.stockpile -= amount_to_provide
+
+        return amount_to_provide
+
+    def total_needs(self):
+        """Return our own needs plus the needs of our children, but not our stockpiling need"""
+        return self.need_per_turn + sum([child.need_from_parent for child in self.progeny if child.alive])
+
     def meet_needs(self):
         """Meet our needs by consuming resources"""
         needs = self.need_per_turn
@@ -290,13 +314,17 @@ class Person(interfaces.IPerson):
 
                 if other.stockpile > 0:
                     if needs > 0:
-                        resources_from_other = min(needs, other.stockpile)
-                        other.stockpile -= resources_from_other
-                        needs -= resources_from_other
+                        # Ask the other what they can give
+                        # resources_available_from_other = other.resources_available_to_give(needs, self)
+
+                        # Take what they can give
+                        # todo: modify this to decide on whether we want to accept that offer
+                        # will make more sense when the offer is more involved, e.g. a loan that we have to pay back
+                        needs -= other.provide_resources(needs, self)
+
                     elif stockpile_needs > 0:
-                        resources_from_other = min(self.traits['max_stockpile_transfer'], other.stockpile)
+                        resources_from_other = other.provide_resources(needs, self)
                         self.stockpile += resources_from_other
-                        other.stockpile -= resources_from_other
                         stockpile_needs -= resources_from_other
 
                     # Since I got something from them, my "credit" is lowered and theirs is raised
@@ -372,19 +400,36 @@ class Person(interfaces.IPerson):
 
 
 class PersonCollection:
-    def __init__(self, params, count, resource_collection, relationship_collection):
+    params = None
+    resource_collection = None
+    relationship_collection = None
+
+    def __init__(self, params, resource_collection, relationship_collection):
+        if PersonCollection.params is None and params is not None:
+            PersonCollection.params = params
+
+        if PersonCollection.resource_collection is None and resource_collection is not None:
+            PersonCollection.resource_collection = resource_collection
+
+        if PersonCollection.relationship_collection is None and relationship_collection is not None:
+            PersonCollection.relationship_collection = relationship_collection
+
+        self._alive_people = {}
+        self._people = {}
+
+    def initialise(self, count):
         # Parameters for the Gaussian distribution
-        mean = params['age_mean']
-        std_dev = params['age_std_dev']
-        size = count
+        mean = PersonCollection.params['age_mean']
+        std_dev = PersonCollection.params['age_std_dev']
 
         # Generate the numbers
-        numbers = np.random.normal(mean, std_dev, size)
+        numbers = np.random.normal(mean, std_dev, count)
 
         # Clip the values to be between 1 and max_age
-        numbers = np.clip(numbers, 1, params['max_age'])
+        numbers = np.clip(numbers, 1, self.params['max_age'])
 
-        people = [Person(params, numbers[i], resource_collection, relationship_collection, self, None) for i in range(count)]
+        people = [Person(self.params, numbers[i], PersonCollection.resource_collection,
+                         PersonCollection.relationship_collection, self, None) for i in range(count)]
 
         # We'll keep dictionaries of all people and alive people for efficient lookup and deserialisation
         self._alive_people = {person.name: person for person in people}
