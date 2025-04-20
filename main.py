@@ -1,6 +1,8 @@
 import cProfile
 import pstats
 
+import argparse
+
 from tqdm import tqdm
 from models.parameters import Parameters
 from models.person import PersonCollection, Traits
@@ -13,6 +15,17 @@ from models.stats import Stats
 
 
 def main():
+    # Get some command line arguments
+    parser = argparse.ArgumentParser(description="Simulation Program")
+
+    # Add arguments
+    parser.add_argument('--charts', action='store_true', help='Display charts')
+    parser.add_argument('--save', action='store_true', help='Save the sim state')
+    parser.add_argument('--save-file', type=str, default='simulation_state.pkl',
+                        help='File to save the simulation state')
+
+    args = parser.parse_args()
+
     # Create some parameters
     params = Parameters()
 
@@ -81,12 +94,14 @@ def main():
         print("\nLoop interrupted. Continuing with the rest of the program.")
 
     # Pickle the simulation state
-    state = State(turn, params, person_collection, resource_collection, relationship_collection, stats_collector)
-    state.save("simulation_state.pkl")
+    if args.save:
+        state = State(turn, params, person_collection, resource_collection, relationship_collection, stats_collector)
+        state.save(args.save_file)
 
     # Plot the stats
-    charter = Charts(stats_collector.stats, params, person_collection)
-    charter.display()
+    if args.charts:
+        charter = Charts(stats_collector.stats, params, person_collection)
+        charter.display()
 
 
 if __name__ == '__main__':
