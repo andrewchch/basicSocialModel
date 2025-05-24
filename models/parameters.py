@@ -38,6 +38,7 @@ class Parameters:
             'min_self_sufficient_age': 7,
             'min_stockpile_for_breeding': 0,
             'max_stockpile_transfer': 2,
+            'desire_to_share_initial': 0.5,
         }
         self.params = copy(self._params)
         self.epochs = []

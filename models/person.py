@@ -34,12 +34,16 @@ class Traits:
             Traits._params = params
         self._traits = {}
 
-    def add(self, trait, value):
-        self._traits[trait] = value
+    def add(self, trait, value, minval=None, maxval=None):
+        self._traits[trait] = {
+            'value': value,
+            'minval': minval,
+            'maxval': maxval
+        }
 
     def __getitem__(self, trait):
         if trait in self._traits:
-            return self._traits[trait]
+            return self._traits[trait]['value']
 
         if trait in Traits._params:
             return Traits._params[trait]
@@ -47,13 +51,25 @@ class Traits:
         return None
 
     def __setitem__(self, trait, value):
-        self._traits[trait] = value
+        self._traits[trait]['value'] = value
 
     def __iter__(self):
         return iter(self._traits)
 
     def __contains__(self, item):
         return item in self._traits
+
+    def mutate(self, trait):
+        """Mutate a trait by a random amount"""
+        if trait in self._traits:
+            scalar = 1.0 + random.uniform(-0.1, 0.1)
+            self._traits[trait]['value'] *= scalar
+
+            if self._traits[trait]['minval'] is not None:
+                self._traits[trait]['value'] = max(self._traits[trait]['value'], self._traits[trait]['minval'])
+
+            if self._traits[trait]['maxval'] is not None:
+                self._traits[trait]['value'] = min(self._traits[trait]['value'], self._traits[trait]['maxval'])
 
 
 class Person(interfaces.IPerson):
@@ -107,12 +123,13 @@ class Person(interfaces.IPerson):
         self.traits = Traits(params)
         self.traits.add('child_chance', random.random())
         self.traits.add('min_stockpile_for_breeding', random.randrange(10, 25))
+        self.traits.add('desire_to_share', params['desire_to_share_initial'], minval=0, maxval=1.0)
 
         # Update our traits from our parent but mutate them slightly
         if parent:
             for trait in parent.traits:
                 self.traits[trait] = parent.traits[trait]
-                self.traits[trait] *= (random.random() < 0.5 and 0.9 or 1.1)
+                self.traits.mutate(trait)
 
     def __str__(self):
         return f'Person {self.name} is {self.age} years old'
@@ -226,6 +243,10 @@ class Person(interfaces.IPerson):
         """Provide an amount of resources to someone else, constrained by what have available to give
         and the maximum amount we desire to give"""
         if amount <= 0:
+            return 0
+
+        # We may not want to give them anything
+        if self.traits['desire_to_share'] < random.random():
             return 0
 
         amount_to_provide = min(self.resources_available_to_give(amount, self), self.stockpile)

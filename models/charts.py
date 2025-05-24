@@ -34,6 +34,7 @@ class Charts:
             'min_stockpile_for_breeding_avg': True,
             'min_stockpile_for_breeding': True,
             'died_this_turn_ages': True,
+            'desire_to_share': True,
         }
 
     # Turn all self.charts off
@@ -43,11 +44,11 @@ class Charts:
         df = pd.DataFrame(self.stats)
 
         if self.charts['alive']:
-            df.plot(x='turn', y=['alive'])
+            df.plot(x='turn', y=['alive'], title='Alive people by turn')
             plt.show()
 
         if self.charts['how_died']:
-            df.plot(x='turn', y=['num_starved', 'num_old_age'])
+            df.plot(x='turn', y=['num_starved', 'num_old_age'], title='How people died by turn')
             plt.show()
 
         if self.charts['died_this_turn_ages']:
@@ -63,39 +64,40 @@ class Charts:
 
             # Create the scatter plot
             plt.figure(figsize=(10, 6))
+            plt.title('Dies this turn ages by Turn')
             plt.scatter(flatted_df['turn'], flatted_df['died_this_turn_ages'], alpha=0.02)
             plt.show()
 
         if self.charts['average_age_of_death']:
-            df.plot(x='turn', y=['average_age_of_death'])
+            df.plot(x='turn', y=['average_age_of_death'], title='Average age of death by turn')
             plt.show()
 
         if self.charts['children_born_per_year']:
-            df.plot(x='turn', y=['children_born_per_year'])
+            df.plot(x='turn', y=['children_born_per_year'], title='Children born per year by turn')
             plt.show()
 
         if self.charts['average_number_of_children']:
-            df.plot(x='turn', y=['average_number_of_children'])
+            df.plot(x='turn', y=['average_number_of_children'], title='Average number of children by turn')
             plt.show()
 
         if self.charts['average_age']:
-            df.plot(x='turn', y=['average_age'])
+            df.plot(x='turn', y=['average_age'], title='Average age by turn')
             plt.show()
 
         if self.charts['resources']:
-            df.plot(x='turn', y=['resources'])
+            df.plot(x='turn', y=['resources'], title='Resources by turn')
             plt.show()
 
         if self.charts['total_children_with_alive_parents']:
-            df.plot(x='turn', y=['total_children_with_alive_parents'])
+            df.plot(x='turn', y=['total_children_with_alive_parents'], title='Total children with alive parents by turn')
             plt.show()
 
         if self.charts['child_chance']:
-            df.plot(x='turn', y=['average_child_chance'])
+            df.plot(x='turn', y=['average_child_chance'], title='Average child chance by turn')
             plt.show()
 
         if self.charts['min_stockpile_for_breeding']:
-            df.plot(x='turn', y=['min_stockpile_for_breeding_avg'])
+            df.plot(x='turn', y=['min_stockpile_for_breeding_avg'], title='Min stockpile for breeding by turn')
             plt.show()
 
         # Draw a scatter plot of the min stockpile for breeding values by turn, where each point is of opacity 0.1
@@ -112,19 +114,38 @@ class Charts:
 
             # Create the scatter plot
             plt.figure(figsize=(10, 6))
+            plt.title('Minimum stockpile for breeding by Turn')
             plt.scatter(flatted_df['turn'], flatted_df['min_stockpile_for_breeding'], alpha=0.02)
             plt.show()
 
+        # Draw a scatter plot of the min stockpile for breeding values by turn, where each point is of opacity 0.1
+        if self.charts['desire_to_share']:
+            # Each value of desire_to_share is a list of values, so we need to flatten it
+            flattened_data = []
+            for entry in self.stats:
+                turn = entry['turn']
+                for value in entry['desire_to_share']:
+                    flattened_data.append({'turn': turn, 'desire_to_share': value})
+
+            # Create a DataFrame
+            flatted_df = pd.DataFrame(flattened_data)
+
+            # Create the scatter plot
+            plt.figure(figsize=(10, 6))
+            plt.title('Desire to Share by Turn')
+            plt.scatter(flatted_df['turn'], flatted_df['desire_to_share'], alpha=0.02)
+            plt.show()
+
         if self.charts['average_stockpile']:
-            df.plot(x='turn', y=['average_stockpile'])
+            df.plot(x='turn', y=['average_stockpile'], title='Average stockpile by turn')
             plt.show()
 
         if self.charts['total_stockpile_need_per_turn']:
-            df.plot(x='turn', y=['total_stockpile_need_per_turn'])
+            df.plot(x='turn', y=['total_stockpile_need_per_turn'], title='Total stockpile need per turn by turn')
             plt.show()
 
         if self.charts['total_stockpile']:
-            df.plot(x='turn', y=['total_stockpile'])
+            df.plot(x='turn', y=['total_stockpile'], title='Total stockpile by turn')
             plt.show()
 
         # Plot a histogram of the number of children of the people who are still alive and of child-bearing age
@@ -189,10 +210,11 @@ class Charts:
         if self.charts['needs_met_chart']:
             df.plot(x='turn', y=['pct_with_stockpile', 'needs_met_from_resources', 'needs_met_from_stockpile',
                                  'needs_met_from_relationships', 'needs_from_parent', 'needs_not_met_died'])
+            plt.title('Needs met by resources, stockpile, and relationships')
             plt.show()
 
-        # Create a boxplot of "resources_available" stat for each turn where the x-axis is the turn value and the y axis is
-        # the resources available
+        # Create a boxplot of "resources_available" stat for each turn where the x-axis is the turn value and the y
+        # axis is the resources available
         if self.charts['resources_available']:
             # Flatten the data
             flattened_data = []
@@ -224,9 +246,11 @@ class Charts:
             df.plot(x='turn', y=['ratio_of_needs_to_resources',
                                  'ratio_of_alive_people_to_resources',
                                  'ratio_of_stockpiles_to_resources'])
+            plt.title('People to resources ratios')
             plt.show()
 
-        # List the number of distinct values of the number of children and the nuber of people with that number of children
+        # List the number of distinct values of the number of children and the nuber of people with that number of
+        # children
         children_counts = {}
         for person in self.people:
             if person.alive:

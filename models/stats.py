@@ -72,6 +72,7 @@ def gather_stats(turn, children, resource_collection, person_collection):
         'min_stockpile_for_breeding_avg': sum(
             [person.traits['min_stockpile_for_breeding'] for person in alive_people]) / num_alive_people,
         'min_stockpile_for_breeding': [person.traits['min_stockpile_for_breeding'] for person in alive_people],
+        'desire_to_share': [person.traits['desire_to_share'] for person in alive_people],
         'died_this_turn_ages': [person.age for person in died_this_turn],
     }
 
